@@ -5,21 +5,59 @@ const createMovie = async (req, res) => {
   try {
     const { title, director, year, genre } = req.body;
 
-    if (!title || !director || !year) {
+    // Checking required field
+    if (
+      !title?.trim() ||
+      !director?.trim() || 
+      !String(year ?? "").trim() 
+    )
+      {
       return res.status(400).json({
-        message : "Title, director and year fields are required."
+        success: false,
+        message: "Title, director , and year are required."
       });
     }
 
+      // Check whether year is a valid number
+    const yearNumber = Number(year);
+
+    if(Number.isNaN(yearNumber)){
+      return res.status(400).json({
+        success: false,
+        message: "Year must be a valid number."
+      })
+    }
+
+
+    //Check whether year is a whole number
+    if (!Number.isInteger(yearNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Year must be a whole number."
+      });
+    }
+
+    // Check the year range
+    const currentYear = new Date().getFullYear;
+
+    if (numberYear < 1888 || numberYear > currentYear) {
+      res.status(400).jason({
+        success: false,
+        message: `Year must be in between 1888 and ${currentYear}.`
+      });
+    }
+
+    
     const movie = await Movie.create({
-      title,
-      director,
+      title: title.trim(),
+      director: director.trim(),
       year,
       genre
     });
 
     return res.status(200).json({
-      message : "Movie created sucessfully",
+      success: true,
+      message: "Movie created sucessfully",
       movie
     })
   } catch (error) {
@@ -36,7 +74,6 @@ const createMovie = async (req, res) => {
 const getMovies = async (req, res) => {
   try{
 
-    
     const movies = await Movie.find();
 
     return res.status(200).json({
