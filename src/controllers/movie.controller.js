@@ -1,4 +1,5 @@
-import Movie from "../models/movie.model.js";
+import mongoose from "mongoose";
+import Movie , { allowedGenres } from "../models/movie.model.js";
 
 // Create a movie
 const createMovie = async (req, res) => {
@@ -14,20 +15,19 @@ const createMovie = async (req, res) => {
       {
       return res.status(400).json({
         success: false,
-        message: "Title, director , and year are required."
+        message: "Title, director, and year are required."
       });
     }
 
-      // Check whether year is a valid number
+    // Check whether year is a valid number
     const yearNumber = Number(year);
 
     if(Number.isNaN(yearNumber)){
       return res.status(400).json({
         success: false,
         message: "Year must be a valid number."
-      })
+      });
     }
-
 
     //Check whether year is a whole number
     if (!Number.isInteger(yearNumber)) {
@@ -38,21 +38,42 @@ const createMovie = async (req, res) => {
     }
 
     // Check the year range
-    const currentYear = new Date().getFullYear;
+    const currentYear = new Date().getFullYear();
 
-    if (numberYear < 1888 || numberYear > currentYear) {
-      res.status(400).jason({
+    if (yearNumber < 1888 || yearNumber > currentYear){
+      return res.status(400).json({
         success: false,
         message: `Year must be in between 1888 and ${currentYear}.`
       });
     }
 
-    
+    // Validate Genre
+
+
+    if (genre !== undefined) {
+
+      if (typeof genre !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "Genre must be a string."
+        });
+      }
+
+      let formattedGenre = genre.trim();
+
+      if (!allowedGenres.includes(formattedGenre)) {
+        return res.status(400).json({
+          success: false,
+          message: `Genre must be one of: ${allowedGenres.join(", ")}`
+        });
+      }
+    }
+
     const movie = await Movie.create({
       title: title.trim(),
       director: director.trim(),
-      year,
-      genre
+      year: yearNumber,
+      genre: genre?.trim()
     });
 
     return res.status(200).json({
@@ -73,7 +94,6 @@ const createMovie = async (req, res) => {
 
 const getMovies = async (req, res) => {
   try{
-
     const movies = await Movie.find();
 
     return res.status(200).json({
@@ -96,6 +116,13 @@ const getMovies = async (req, res) => {
 const getMovieById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if(!mongoose.Types.ObjectId.isValid(id)){
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Movie Id"
+      });
+    }
 
     const movie = await Movie.findById(id);
 
@@ -126,43 +153,142 @@ const updateMovieById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if(!mongoose.Types.ObjectId.isValid(id)){
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Movie Id"
+      });
+    }
+     
     const { title, director, year, genre } = req.body;
 
-    const updatedMovie = await Movie.findByIdAndUpdate(
-      id,
-      {
-        title,
-        director,
-        year,
-        genre
-      },
-      {
-        new : true,
-        runValidators: true
-      }
-    );
+    // validate title
+    if(title !== undefined){
+      const formattedTitle = title.trim();
 
-    if(!updatedMovie){
-      return res.status(404).jason({
-        sucess : false,
-        message : "Movie not found."
+    if (typeof title !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Title must be a string."
       });
-    };
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: "Movie updated successfully.",
-      movie : updatedMovie
+      if(!formattedTitle)
+        return res.status(400).json({
+        success: false,
+        message: "Title cannot be empty."
+      })
+
+    req.body.title = formattedTitle;
+    }                                 
+
+    // validate director
+   if(director !== undefined){
+      const formattedDirector = title.trim();
+
+
+   if (typeof director !== "string") {
+    return res.status(400).json({
+      success: false,
+      message: "Director must be a string."
+    });
+  }
+
+    if(!formattedDirector)
+      return res.status(400).json({
+      success: false,
+      message: "Director cannot be empty."
+    })
+
+    req.body.title = formattedDirector;
+   }
+
+    // validate year
+   
+  if (year !== undefined) {
+    const yearNumber = Number(year);
+
+    if (Number.isNaN(yearNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Year must be a valid number."
+      });
+    }
+
+    if (!Number.isInteger(yearNumber)) {
+    return res.status(400).json({
+      success: false,
+      message: "Year must be a whole number."
+    });
+  }
+
+  const currentYear = new Date().getFullYear();
+
+  if (yearNumber < 1888 || yearNumber > currentYear) {
+    return res.status(400).json({
+      success: false,
+      message: `Year must be between 1888 and ${currentYear}.`
     });
 
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-      error: error.message
-   });
+  // Replace the original value with the validated number
+  req.body.year = yearNumber;
+     }
   }
-};
+  // Validate genre
+  if(genre !== undefined){
+    const formattedGenre = genre.trim();
+
+    if(typeof formattedGenre !== "string"){
+      return res.status(400).json({
+        success: false,
+        message: "Genre must be a string."
+    })
+  }
+
+  if(!formattedGenre){
+    return res.status(400).json({
+        success: false,
+        message: "Genre cannot be empty." 
+      })
+  }
+  }
+
+  const updatedMovie = await Movie.findByIdAndUpdate(
+    id,
+    {
+      title,
+      director,
+      year,
+      genre
+    },
+    {
+      new : true,
+      runValidators: true
+    }
+  );
+
+  if(!updatedMovie){
+    return res.status(404).json({
+      sucess : false,
+      message : "Movie not found."
+    });
+  };
+
+  return res.status(200).json({
+    success: true,
+    message: "Movie updated successfully.",
+    movie : updatedMovie
+  });
+
+  } catch (error) {
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error.",
+    error: error.message
+  });
+  }
+  
+}
 
 //delete a movie
 

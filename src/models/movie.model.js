@@ -16,7 +16,6 @@ const allowedGenres = [
   "Thriller"
 ];
 
-
 const movieSchema = new mongoose.Schema({
   title: {
     required: true,
@@ -24,8 +23,8 @@ const movieSchema = new mongoose.Schema({
   },
 
   director: {
-    required: true,
-    type: String
+    required : true,
+    type : String
   },
 
   year: {
@@ -46,4 +45,5 @@ const movieSchema = new mongoose.Schema({
 
 const Movie = mongoose.model("Movie" , movieSchema); 
 
+export { allowedGenres };
 export default Movie;
