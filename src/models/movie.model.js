@@ -35,7 +35,13 @@ const movieSchema = new mongoose.Schema({
   genre: {
     type: String,
     enum: allowedGenres
-  }
+  },
+
+  createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    }
 
 },
 

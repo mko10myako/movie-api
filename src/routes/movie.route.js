@@ -10,13 +10,14 @@ import {
 
 import { validateCreateMovie } from "../middleware/validateCreateMovie.js";
 import { validateUpdateMovie } from "../middleware/validateUpdateMovie.js";
+import authenticateUser from "../middleware/authenticateUser.js";
   
 const router = express.Router();
 
-router.post('/', validateCreateMovie, createMovie);
-router.get('/', getMovies);
-router.get('/:id', getMovieById);
-router.put('/:id', validateUpdateMovie , updateMovieById);
-router.delete('/:id', deleteMovieById);
+router.post('/', authenticateUser, validateCreateMovie, createMovie);
+router.get('/', authenticateUser, getMovies);
+router.get('/:id', authenticateUser, getMovieById);
+router.put('/:id', authenticateUser, validateUpdateMovie , updateMovieById);
+router.delete('/:id', authenticateUser, deleteMovieById);
 
 export default router;

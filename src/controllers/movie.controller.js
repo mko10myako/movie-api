@@ -10,7 +10,8 @@ const createMovie = async (req, res, next) => {
       title,
       director,
       year,
-      genre
+      genre,
+      createdBy: req.user._id
     });
 
     return res.status(201).json({
@@ -27,7 +28,9 @@ const createMovie = async (req, res, next) => {
 // Get All Movies
 const getMovies = async (req, res, next) => {
   try {
-    const movies = await Movie.find();
+    const movies = await Movie.find(
+      {createdBy: req.user._id}
+    );
 
     return res.status(200).json({
       success: true,
@@ -52,7 +55,10 @@ const getMovieById = async (req, res, next) => {
       });
     }
 
-    const movie = await Movie.findById(id);
+    const movie = await Movie.findOne({
+        _id: id,
+        createdBy: req.user._id
+      });
 
     if (!movie) {
       return res.status(404).json({
@@ -83,28 +89,48 @@ const updateMovieById = async (req, res, next) => {
       });
     }
 
-    const updatedMovie = await Movie.findByIdAndUpdate(
-      id,
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+    // Find the movie before updating it
+    const movie = await Movie.findById(id);
 
-    if (!updatedMovie) {
+    if (!movie) {
       return res.status(404).json({
         success: false,
         message: "Movie not found."
       });
     }
 
+    // Check whether the logged-in user created this movie
+    if (
+      !movie.createdBy ||
+      !movie.createdBy.equals(req.user._id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to update this movie."
+      });
+    }
+
+    const { title, director, year, genre } = req.body;
+
+    const updatedMovie = await Movie.findByIdAndUpdate(
+      id,
+      {
+        title,
+        director,
+        year,
+        genre
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
     return res.status(200).json({
       success: true,
       message: "Movie updated successfully.",
       movie: updatedMovie
     });
-
   } catch (error) {
     next(error);
   }
@@ -122,14 +148,28 @@ const deleteMovieById = async (req, res, next) => {
       });
     }
 
-    const deletedMovie = await Movie.findByIdAndDelete(id);
+    const movie = await Movie.findById(id);
 
-    if (!deletedMovie) {
+    if (!movie) {
       return res.status(404).json({
         success: false,
         message: "Movie not found."
       });
     }
+
+    // Check ownership
+    if (
+      !movie.createdBy ||
+      !movie.createdBy.equals(req.user._id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this movie."
+      });
+    }
+
+
+    const deletedMovie = await Movie.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
