@@ -9,7 +9,7 @@ app.use(express.json());
 
 app.get("/", (req , res) => {
   res.status(200).json({
-    sucess : true,
+    success : true,
     message: "Movie API is running."
   });
 });
